@@ -1,7 +1,6 @@
 const express = require("express");
 const { Users, Tokens } = require("../models");
 const jwt = require("jsonwebtoken");
-const authMiddleware = require("../middlewares/auth-middleware.js");
 const router = express.Router();
 
 router.post("/signup", async (req, res) => {
@@ -64,28 +63,53 @@ router.post("/login", async (req, res) => {
     const { nickname, password } = req.body;
     const user = await Users.findOne({ where: { nickname } });
 
-    const existReFreshToken = await Tokens.findOne({});
-    if (existReFreshToken) await Tokens.destroy({ where: {} });
-
-    const refreshToken = jwt.sign({}, process.env.JWT_SECRET_KEY, { expiresIn: "14d" });
-    const accessToken = jwt.sign({ userId: user.userId }, process.env.JWT_SECRET_KEY, {
-      expiresIn: "1h",
-    });
-
     if (!user || user.password !== password)
       return res.status(412).json({ errorMessage: "닉네임 또는 패스워드를 확인해주세요." });
 
-    await Tokens.create({ tokenId: refreshToken, UserId: user.userId });
+    const existReFreshToken = await Tokens.findOne({ where: { UserId: user.userId } });
 
-    res.cookie("accessToken", `Bearer ${accessToken}`);
-    return res.status(200).json({ success: true, accessToken });
+    if (!existReFreshToken) {
+      const refreshToken = jwt.sign({}, process.env.JWT_SECRET_KEY, { expiresIn: "14d" });
+      const accessToken = jwt.sign({ userId: user.userId }, process.env.JWT_SECRET_KEY, {
+        expiresIn: "1h",
+      });
+
+      await Tokens.create({ tokenId: refreshToken, UserId: user.userId });
+      res.cookie("accessToken", `Bearer ${accessToken}`);
+      return res.status(200).json({ success: true, accessToken });
+    }
+    try {
+      jwt.verify(existReFreshToken.tokenId, process.env.JWT_SECRET_KEY);
+
+      await Tokens.destroy({ where: { UserId: user.userId } });
+      await Tokens.create({ tokenId: existReFreshToken.tokenId, UserId: user.userId });
+
+      const accessToken = jwt.sign({ userId: user.userId }, process.env.JWT_SECRET_KEY, {
+        expiresIn: "1h",
+      });
+
+      res.cookie("accessToken", `Bearer ${accessToken}`);
+      return res.status(200).json({ success: true, accessToken });
+    } catch (error) {
+      if (error.name === "TokenExpiredError") {
+        const refreshToken = jwt.sign({}, process.env.JWT_SECRET_KEY, { expiresIn: "14d" });
+        const accessToken = jwt.sign({ userId: user.userId }, process.env.JWT_SECRET_KEY, {
+          expiresIn: "1h",
+        });
+
+        await Tokens.destroy({ where: { UserId: user.userId } });
+        await Tokens.create({ tokenId: refreshToken, UserId: user.userId });
+        res.cookie("accessToken", `Bearer ${accessToken}`);
+        return res.status(200).json({ success: true, accessToken });
+      } else throw Error;
+    }
   } catch (error) {
     console.log(error);
     return res.status(400).json({ success: false, errorMessage: "로그인에 실패하였습니다." });
   }
 });
 
-router.delete("/logout", authMiddleware, async (_, res) => {
+router.delete("/logout", async (_, res) => {
   try {
     await Tokens.destroy({ where: {} });
     res.clearCookie("accessToken");
@@ -93,6 +117,47 @@ router.delete("/logout", authMiddleware, async (_, res) => {
     res.status(200).json({ success: true, message: "로그아웃 되었습니다." });
   } catch (error) {
     return res.status(400).json({ success: false, errorMessage: "로그아웃에 실패하였습니다" });
+  }
+});
+
+router.post("/switchId/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const currentUserId = await Users.findOne({ where: { userId } });
+
+    if (!currentUserId) {
+      return res.status(404).json({
+        success: false,
+        errorMessage: "회원가입이 되어 있지 않은 아이디입니다. 회원가입 해주세요.",
+      });
+    }
+    const existReFreshToken = await Tokens.findOne({ where: { UserId: currentUserId.userId } });
+    try {
+      jwt.verify(existReFreshToken.tokenId, process.env.JWT_SECRET_KEY);
+
+      await Tokens.destroy({ where: { UserId: currentUserId.userId } });
+      await Tokens.create({ tokenId: existReFreshToken.tokenId, UserId: currentUserId.userId });
+
+      const accessToken = jwt.sign({ userId }, process.env.JWT_SECRET_KEY, {
+        expiresIn: "1h",
+      });
+      res.cookie("accessToken", `Bearer ${accessToken}`);
+      return res
+        .status(200)
+        .json({ success: true, message: `${currentUserId.nickname}의 계정으로 전환되었습니다.` });
+    } catch (error) {
+      if (error.name === "TokenExpiredError") {
+        await Tokens.destroy({ where: { tokenId: existReFreshToken.tokenId } });
+        res
+          .status(400)
+          .json({ success: false, message: "토큰이 만료된 아이디입니다. 다시 로그인 해주세요." });
+      } else throw Error;
+    }
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(403)
+      .json({ success: false, errorMessage: "계정 전환에 실패했습니다. 로그인 먼저 해주세요" });
   }
 });
 
