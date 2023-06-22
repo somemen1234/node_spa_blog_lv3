@@ -1,6 +1,7 @@
 const express = require("express");
-const { Users } = require("../models");
+const { Users, Tokens } = require("../models");
 const jwt = require("jsonwebtoken");
+const authMiddleware = require("../middlewares/auth-middleware.js");
 const router = express.Router();
 
 router.post("/signup", async (req, res) => {
@@ -63,14 +64,35 @@ router.post("/login", async (req, res) => {
     const { nickname, password } = req.body;
     const user = await Users.findOne({ where: { nickname } });
 
+    const existReFreshToken = await Tokens.findOne({});
+    if (existReFreshToken) await Tokens.destroy({ where: {} });
+
+    const refreshToken = jwt.sign({}, process.env.JWT_SECRET_KEY, { expiresIn: "14d" });
+    const accessToken = jwt.sign({ userId: user.userId }, process.env.JWT_SECRET_KEY, {
+      expiresIn: "1h",
+    });
+
     if (!user || user.password !== password)
       return res.status(412).json({ errorMessage: "닉네임 또는 패스워드를 확인해주세요." });
 
-    const token = jwt.sign({ userId: user.userId }, "secret-login-key", { expiresIn: "1h" });
-    res.cookie("Authorization", `Bearer ${token}`);
-    return res.status(200).json({ success: true, token });
+    await Tokens.create({ tokenId: refreshToken, UserId: user.userId });
+
+    res.cookie("accessToken", `Bearer ${accessToken}`);
+    return res.status(200).json({ success: true, accessToken });
   } catch (error) {
+    console.log(error);
     return res.status(400).json({ success: false, errorMessage: "로그인에 실패하였습니다." });
+  }
+});
+
+router.delete("/logout", authMiddleware, async (_, res) => {
+  try {
+    await Tokens.destroy({ where: {} });
+    res.clearCookie("accessToken");
+
+    res.status(200).json({ success: true, message: "로그아웃 되었습니다." });
+  } catch (error) {
+    return res.status(400).json({ success: false, errorMessage: "로그아웃에 실패하였습니다" });
   }
 });
 
