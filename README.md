@@ -47,3 +47,4 @@ posts(게시글)
 - 게시글 삭제 또한 로그인된 토큰을 검증 해 검증된 사람 중 해당 게시글을 작성한 사람만 삭제를 할 수 있게 구현
 
 ERD : assets/ERD-spaBlogLv3.png
+API https://charming-castanet-ba9.notion.site/4169e1aada0b415bbbb4a6f2be6d8c19?v=1f5fde412ed047eebbd7d8c36e18787c&pvs=4
