@@ -113,6 +113,14 @@ router.delete("/logout/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
     const user = await Users.findOne({ where: { userId } });
+    const existToken = await Tokens.findOne({ where: { UserId: userId } });
+
+    if (!existToken) {
+      return res.status(404).json({
+        success: false,
+        errorMessage: "로그인이 되어 있지 않은 아이디입니다.",
+      });
+    }
 
     await Tokens.destroy({ where: { UserId: userId } });
     res.clearCookie("accessToken");
