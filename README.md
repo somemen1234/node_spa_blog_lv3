@@ -1,6 +1,6 @@
 # node_spa_blog_lv3
 회원가입과 로그인을 통한 내 블로그 백엔드 서버 구현(게시판)
-/ mongoose가 아닌 MYSQL을 sequelize로 구현(RDS를 통해)
+/ mongoose가 아닌 MYSQL을 sequelize로 구현(RDS)
 
 accessToken / refreshToken
 * 쿠키에 저장할 accessToken과 db에 저장해서 사용할 refreshToken 두개를 발급받아 사용하도록 구현
