@@ -46,5 +46,6 @@ posts(게시글)
   - 현재 로그인된 userId가 다르다면 수정할 수 없도록 권한 막음 & 게시글 내용이 없으면 수정을 못하도록 구현
 - 게시글 삭제 또한 로그인된 토큰을 검증 해 검증된 사람 중 해당 게시글을 작성한 사람만 삭제를 할 수 있게 구현
 
-ERD : assets/ERD-spaBlogLv3.png
+ERD : assets/ERD-spaBlogLv3.png 
+
 API https://charming-castanet-ba9.notion.site/4169e1aada0b415bbbb4a6f2be6d8c19?v=1f5fde412ed047eebbd7d8c36e18787c&pvs=4
