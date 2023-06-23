@@ -54,7 +54,6 @@ posts(게시글)
 
 ERD 
 
-
 ![drawSQL-spa-blog-lv3-export-2023-06-23](https://github.com/somemen1234/node_spa_blog_lv3/assets/28723327/9737845e-d834-497d-ba37-b6c0d2287e0a)
 
 
