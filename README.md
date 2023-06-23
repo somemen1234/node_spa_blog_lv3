@@ -53,6 +53,8 @@ posts(게시글)
 - 게시글 삭제 또한 로그인된 토큰을 검증 해 검증된 사람 중 해당 게시글을 작성한 사람만 삭제를 할 수 있게 구현
 
 ERD 
+
+
 ![drawSQL-spa-blog-lv3-export-2023-06-23](https://github.com/somemen1234/node_spa_blog_lv3/assets/28723327/9737845e-d834-497d-ba37-b6c0d2287e0a)
 
 
