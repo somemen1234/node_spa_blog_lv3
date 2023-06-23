@@ -24,7 +24,7 @@ router.post("/posts", authMiddleware, async (req, res) => {
       content,
     });
 
-    return res.json({ data: post });
+    return res.json({ success: true, message: "게시글을 생성하였습니다." });
   } catch (error) {
     return res.status(400).json({ success: false, errorMessage: "게시글 작성에 실패했습니다." });
   }

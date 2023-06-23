@@ -87,7 +87,10 @@ module.exports = async (req, res, next) => {
     }
   } catch (error) {
     if (error.name === "TokenExpiredError") {
-      res.status(400).json({
+      if (existReFreshToken) {
+        await Tokens.destroy({ where: { tokenId: existReFreshToken.tokenId } });
+      }
+      res.status(403).json({
         success: false,
         message: "토큰이 만료된 아이디입니다. 다시 로그인 해주세요.",
       });
