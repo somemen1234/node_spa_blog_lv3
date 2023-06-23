@@ -4,6 +4,7 @@ const { Op } = require("sequelize");
 const authMiddleware = require("../middlewares/auth-middleware.js");
 const router = express.Router();
 
+//게시글 등록 API
 router.post("/posts", authMiddleware, async (req, res) => {
   try {
     const { userId } = res.locals.user;
@@ -30,6 +31,7 @@ router.post("/posts", authMiddleware, async (req, res) => {
   }
 });
 
+//게시글 전제 조회 API
 router.get("/posts", async (_, res) => {
   try {
     const posts = await Posts.findAll({
@@ -45,6 +47,7 @@ router.get("/posts", async (_, res) => {
   }
 });
 
+//게시글 상세조회 API
 router.get("/posts/:postId", async (req, res) => {
   try {
     const { postId } = req.params;
@@ -64,6 +67,7 @@ router.get("/posts/:postId", async (req, res) => {
   }
 });
 
+//게시글 수정 API
 router.put("/posts/:postId", authMiddleware, async (req, res) => {
   try {
     const { postId } = req.params;
@@ -101,6 +105,7 @@ router.put("/posts/:postId", authMiddleware, async (req, res) => {
   }
 });
 
+//게시글 삭제 API
 router.delete("/posts/:postId", authMiddleware, async (req, res) => {
   try {
     const { postId } = req.params;
