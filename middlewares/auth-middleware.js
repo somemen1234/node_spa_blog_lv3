@@ -94,10 +94,10 @@ module.exports = async (req, res, next) => {
       return;
     } else {
       res.clearCookie("accessToken");
-      Tokens.destroy({});
+      Tokens.destroy({ where: {} });
       res.status(403).json({
         success: false,
-        errorMessage: "전달된 쿠키에서 오류가 발생하였습니다.",
+        errorMessage: "전달된 쿠키에서 오류가 발생하였습니다. 모든 쿠키를 삭제합니다.",
       });
       return;
     }

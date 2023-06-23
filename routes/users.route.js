@@ -1,12 +1,11 @@
 const express = require("express");
-const { Users, Tokens } = require("../models");
+const { Users, Tokens, Posts } = require("../models");
 const jwt = require("jsonwebtoken");
 const router = express.Router();
 
 router.post("/signup", async (req, res) => {
   try {
     const { nickname, password, confirmPassword } = req.body;
-    const existUser = await Users.findOne({ where: { nickname } });
     let nicknameReg = new RegExp(/^[\w]{3,12}$/g);
 
     if (!nickname || !password || !confirmPassword) {
@@ -39,6 +38,7 @@ router.post("/signup", async (req, res) => {
       });
       return;
     }
+    const existUser = await Users.findOne({ where: { nickname } });
 
     if (existUser) {
       res.status(412).json({
@@ -109,12 +109,17 @@ router.post("/login", async (req, res) => {
   }
 });
 
-router.delete("/logout", async (_, res) => {
+router.delete("/logout/:userId", async (req, res) => {
   try {
-    await Tokens.destroy({ where: {} });
+    const { userId } = req.params;
+    const user = await Users.findOne({ where: { userId } });
+
+    await Tokens.destroy({ where: { UserId: userId } });
     res.clearCookie("accessToken");
 
-    res.status(200).json({ success: true, message: "로그아웃 되었습니다." });
+    return res
+      .status(200)
+      .json({ success: true, message: `${user.nickname}님이 로그아웃 되었습니다.` });
   } catch (error) {
     return res.status(400).json({ success: false, errorMessage: "로그아웃에 실패하였습니다" });
   }
@@ -148,16 +153,18 @@ router.post("/switchId/:userId", async (req, res) => {
     } catch (error) {
       if (error.name === "TokenExpiredError") {
         await Tokens.destroy({ where: { tokenId: existReFreshToken.tokenId } });
-        res
-          .status(400)
-          .json({ success: false, message: "토큰이 만료된 아이디입니다. 다시 로그인 해주세요." });
+        return res.status(400).json({
+          success: false,
+          message: "토큰이 만료된 아이디입니다. 다시 로그인 해주세요.",
+        });
       } else throw Error;
     }
   } catch (error) {
     console.log(error);
-    return res
-      .status(403)
-      .json({ success: false, errorMessage: "계정 전환에 실패했습니다. 로그인 먼저 해주세요" });
+    return res.status(403).json({
+      success: false,
+      errorMessage: "계정 전환에 실패했습니다. 로그인 먼저 해주세요",
+    });
   }
 });
 

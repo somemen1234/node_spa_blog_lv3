@@ -95,7 +95,7 @@ router.put("/posts/:postId", authMiddleware, async (req, res) => {
       }
     );
 
-    res.status(201).json({ success: true, message: "게시글을 수정하였습니다." });
+    return res.status(201).json({ success: true, message: "게시글을 수정하였습니다." });
   } catch (error) {
     return res.status(400).json({ success: false, errorMessage: "게시글 수정에 실패했습니다." });
   }
