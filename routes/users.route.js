@@ -63,35 +63,33 @@ router.post("/signup", async (req, res) => {
 
 // 로그인 API
 router.post("/login", async (req, res) => {
+  const { nickname, password } = req.body;
+
+  if (!nickname || !password)
+    return res.status(412).json({ errorMessage: "닉네임 또는 패스워드를 입력해주세요." });
+
+  const user = await Users.findOne({ where: { nickname } });
+
+  // 저장된 DB에 해당하는 user정보가 없는 경우
+  if (!user || user.password !== password)
+    return res.status(412).json({ errorMessage: "닉네임 또는 패스워드를 확인해주세요." });
+
+  // 저장된 user의 refreshToken이 있는지 확인
+  const existReFreshToken = await Tokens.findOne({ where: { UserId: user.userId } });
+
+  // 없으면 accessToken과 refreshToken을 모두 생성
+  if (!existReFreshToken) {
+    const refreshToken = jwt.sign({}, process.env.JWT_SECRET_KEY, { expiresIn: "14d" });
+    const accessToken = jwt.sign({ userId: user.userId }, process.env.JWT_SECRET_KEY, {
+      expiresIn: "1h",
+    });
+
+    await Tokens.create({ tokenId: refreshToken, UserId: user.userId });
+    res.cookie("accessToken", `Bearer ${accessToken}`);
+    return res.status(200).json({ success: true, message: "로그인에 성공했습니다.", accessToken });
+  }
+
   try {
-    const { nickname, password } = req.body;
-
-    if (!nickname || !password)
-      return res.status(412).json({ errorMessage: "닉네임 또는 패스워드를 입력해주세요." });
-
-    const user = await Users.findOne({ where: { nickname } });
-
-    // 저장된 DB에 해당하는 user정보가 없는 경우
-    if (!user || user.password !== password)
-      return res.status(412).json({ errorMessage: "닉네임 또는 패스워드를 확인해주세요." });
-
-    // 저장된 user의 refreshToken이 있는지 확인
-    const existReFreshToken = await Tokens.findOne({ where: { UserId: user.userId } });
-
-    // 없으면 accessToken과 refreshToken을 모두 생성
-    if (!existReFreshToken) {
-      const refreshToken = jwt.sign({}, process.env.JWT_SECRET_KEY, { expiresIn: "14d" });
-      const accessToken = jwt.sign({ userId: user.userId }, process.env.JWT_SECRET_KEY, {
-        expiresIn: "1h",
-      });
-
-      await Tokens.create({ tokenId: refreshToken, UserId: user.userId });
-      res.cookie("accessToken", `Bearer ${accessToken}`);
-      return res
-        .status(200)
-        .json({ success: true, message: "로그인에 성공했습니다.", accessToken });
-    }
-
     // refreshToken이 있다면 검증을 실시
     // 검증이 성공이 된다면 accessToken만 새로 발급하고 refreshToken은 그대로 가져옴
     // 이 때, 기존에 있는 값을 지우고 새로 생성하는 이유는 Tokens에 여러 계정이 들어가기 때문에
